@@ -117,3 +117,179 @@ db.clientes.find({
     ]
 })
 ```
+
+## Operadores de evaluación
+
+$type (visto anteriormente)
+
+$exists
+{$exists: <boolean>}
+
+```
+db.clientes.find({edad: {$exists: false}})
+```
+Devuelve los que no contienen el campo edad
+
+En el caso de pasar true al operador también devuelve los que en el campo tienen el tipo-valor null
+
+$regex (expresiones regulares)
+{$regex: <expresión-regular>, $options: <opciones>}
+
+Set de datos
+
+db.clientes5.insert([
+    {nombre: 'Luis', apellidos: 'García Pérez'},
+    {nombre: 'Pedro', apellidos: 'Gutiérrez López'},
+    {nombre: 'Sara', apellidos: 'López Gómez'},
+    {nombre: 'María', apellidos: 'Pérez Góngora'},
+    {nombre: 'Juan', apellidos: 'Pérez \nGóngora'},
+])
+
+
+```
+db.clientes5.find({apellidos: {$regex: 'ez$'}}) // todos los que finalicen en ez
+```
+
+```
+db.clientes5.find({apellidos: {$regex: '^gu', $options: 'i'}}) // opción case-insensitive
+```
+
+```
+db.clientes5.find({apellidos: {$regex: '^G', $options: 'm'}}) // incluya saltos de línea (inclusivo)
+```
+
+```
+db.clientes5.find({apellidos: {$regex: 'Gó m', $options: 'x'}}) // omite espacios en blanco
+```
+
+```
+db.clientes5.find({apellidos: {$regex: 'gó m', $options: 'ix'}}) // se pueden combinar las opciones
+```
+
+$comment
+
+```
+db.clientes5.find({apellidos: {$regex: 'gó m', $options: 'ix'}, $comment: 'Devuelve los que contengan gom'})
+```
+
+## Operadores de Array
+
+$all, $elemMatch (vistos anteriormente)
+
+$size
+Recibe un entero para realizar consultas de campos que tengan un determinado número de elementos
+
+## Operadores de Proyección
+
+$ ¡Ojo certificación!
+Define en el documento de proyección los elementos a devolver de un campo array
+en función de una expresión definida en el documento de consulta
+- Solo devuelve el primer elemento del array que cumpla la condición
+db.<colección>.find({<array>:<valor>},{"<array>.$": 1})
+
+
+Set de datos
+
+```
+use videogames
+
+db.results.insert([
+    {player: 'Pepe', game: 'Tetris', points: [79,102,89,101]},
+    {player: 'Laura', game: 'Tetris', points: [120,99,100,120]}
+])
+```
+
+```
+db.results.find(
+    {game: 'Tetris', points: {$gte: 100}},
+    {_id: 0, "points.$": 1}
+)
+```
+
+$elemMatch en proyección
+
+Set de datos
+
+db.games.insert([
+    {
+        game: 'Tetris',
+        players: [
+            {name: 'pepe', maxScore: 98},
+            {name: 'luisa', maxScore: 110},
+            {name: 'John', maxScore: 105},
+        ]
+    },
+    {
+        game: 'Mario Bros',
+        players: [
+            {name: 'pepe', maxScore: 70},
+            {name: 'luisa', maxScore: 98},
+            {name: 'John', maxScore: 110},
+        ]
+    }
+])
+
+Funciona como el anterior ($) pero permite filtrar en campos de subdocumentos
+y no hace falta que la expresión esté en la consulta
+
+db.games.find(
+    {game: 'Tetris'},
+    {_id: 0, players: {$elemMatch: {maxScore: {$gte: 100}}}}
+)
+
+Devuelve todos los documentos con game igual a 'Tetris' pero solamente el campo player con el campo maxScore
+con el primer valor que supere 100
+
+Posibles respuestas de certificación a la operación anterior
+
+a) {
+    "players": [
+            {name: 'luisa', maxScore: 110},
+            {name: 'John', maxScore: 105},
+    ]
+}
+
+b) {
+    "players": [
+            {name: 'luisa', maxScore: 110},
+            {name: 'John', maxScore: 105},
+    ]
+}
+{
+    "players": [
+            {name: 'John', maxScore: 110},
+    ] 
+}
+
+c) {
+    "players": [
+            {name: 'luisa', maxScore: 110},
+    ]
+}
+{
+    "players": [
+            {name: 'John', maxScore: 110},
+    ] 
+}
+
+d) {
+    "players": [
+            {name: 'luisa', maxScore: 110}, // Correcta
+    ]
+}
+
+$slice en proyección ¡Ojo certificación!
+db.<colección>.find({<consulta>},{<array>: {$slice: <valor>}})
+Los valores a pasar a slice son idem al operador de JS del mismo nombre
+
+```
+db.results.find({}, {points: {$slice: 3}}) // devuelve los tres primeros
+```
+```
+db.results.find({}, {points: {$slice: -2}}) // devuelve los dos últimos
+```
+```
+db.results.find({}, {points: {$slice: [2,2]}}) // skip-limit o posición-nº elementos
+```
+
+
